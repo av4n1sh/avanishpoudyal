@@ -1,0 +1,14 @@
+{
+  "name": "star41-personal-space",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "happy-dom": "21.0.4"
+  },
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "check": "node --check dist/app.js && node --check dist/content.js && node --test tests/*.test.mjs"
+  }
+}

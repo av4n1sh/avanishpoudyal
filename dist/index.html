@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#222220">
+  <meta name="description" content="*41 — A personal space for curiosity, design, interaction, and things taking shape.">
+  <meta property="og:title" content="*41 — A personal space">
+  <meta property="og:description" content="A small space for big curiosities. An open-ended collection of thoughts and interactive experiments.">
+  <title>*41 — A personal space</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <script>
+    (() => {
+      let choice = 'system';
+      try { choice = localStorage.getItem('star41-theme') || 'system'; } catch {}
+      const dark = choice === 'dark' || (choice === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      document.documentElement.dataset.themeChoice = choice;
+      let seen = false;
+      try { seen = sessionStorage.getItem('star41-intro') === 'seen'; } catch {}
+      if (!seen) document.documentElement.classList.add('intro-active');
+      setTimeout(() => document.documentElement.classList.remove('intro-active'), 3000);
+    })();
+  </script>
+  <link rel="preload" href="/assets/fonts/DM-Sans.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="intro" class="intro" aria-hidden="true">
+    <div class="intro-counter">0</div>
+    <span class="intro-label mono">*41 :: AN INTRODUCTION</span>
+  </div>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="header-meta mono"><span id="fps" aria-label="Approximate rendering frames per second">FPS::—</span><span>A PERSONAL SPACE</span></div>
+      <div class="header-row">
+        <a class="logo" href="/" aria-label="*41 — Home"><span>*41</span></a>
+        <div class="header-tools">
+          <nav class="main-nav" aria-label="Main navigation">
+            <a href="/about">About</a><a href="/lab">Lab</a><a href="/concept">Concept</a><a href="/contact">Contact</a>
+          </nav>
+          <button class="search-trigger" aria-label="Search pages and experiments" aria-keyshortcuts="Meta+K Control+K"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4.5 4.5"/></svg><kbd>⌘ K</kbd></button>
+        </div>
+      </div>
+    </header>
+    <main id="main" tabindex="-1"></main>
+    <footer class="site-footer">
+      <a class="footer-note mono" href="/concept">*41 <span>— STILL TAKING SHAPE</span></a>
+      <div class="theme-control" role="group" aria-label="Color theme">
+        <button data-theme-choice="light" aria-label="Light theme" title="Light theme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg></button>
+        <button data-theme-choice="dark" aria-label="Dark theme" title="Dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14a8.4 8.4 0 0 1-10-10A8.5 8.5 0 1 0 20 14Z"/></svg></button>
+        <button data-theme-choice="system" class="system-theme mono" aria-label="Use system theme" title="Follow system theme">AUTO</button>
+      </div>
+    </footer>
+  </div>
+  <dialog id="search-dialog" class="search-dialog" aria-labelledby="search-title">
+    <div class="search-top"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4.5 4.5"/></svg><label id="search-title" class="sr-only" for="search-input">Search this space</label><input id="search-input" placeholder="Find your way around…" autocomplete="off" role="combobox" aria-expanded="true" aria-autocomplete="list" aria-controls="search-results"><button class="close-search mono" aria-label="Close search">ESC</button></div>
+    <div id="search-results" role="listbox" aria-label="Search results"></div>
+    <div id="search-announcement" class="sr-only" role="status"></div>
+    <div class="search-bottom mono"><span><kbd>↑ ↓</kbd> NAVIGATE</span><span><kbd>↵</kbd> OPEN</span><span><kbd>ESC</kbd> CLOSE</span></div>
+  </dialog>
+  <noscript><div class="no-script">*41 is a personal space for curiosity, design, and motion. Please enable JavaScript to explore the interactive pages.</div></noscript>
+</body>
+</html>
