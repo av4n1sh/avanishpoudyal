@@ -1,6 +1,6 @@
 # *41 — A personal space
 
-A tactile, typography-led website with original content and four small interactive demos. Built with browser-native HTML, CSS, and JavaScript modules. Production has no package dependencies or build step. Fonts are self-hosted. DM Sans and IBM Plex Mono include their OFL licenses in `dist/assets/fonts/`; the supplied Helvetica Neue files are a separate, proprietary family.
+A typography-led, Liquid Glass website with original content and four small interactive demos. Translucent surfaces, restrained reflections, and floating page-specific objects give the interface depth in both themes. Built with browser-native HTML, CSS, and JavaScript modules. Production has no package dependencies or build step. Fonts are self-hosted. DM Sans and IBM Plex Mono include their OFL licenses in `dist/assets/fonts/`; the supplied Helvetica Neue files are a separate, proprietary family.
 
 ## Run locally
 
@@ -28,13 +28,18 @@ Set `contactEndpoint` to your own server endpoint. It receives a JSON POST conta
 - System-aware themes with remembered manual choices, set before CSS loads.
 - Command palette using a native modal dialog: Ctrl/Cmd+K, arrows, Enter, Escape, focus return, touch selection, and empty results.
 - Wheel selection by pointer/touch drag, scroll, arrow keys, Home/End, or previous/next buttons. Opening is a separate action, avoiding navigation during a drag.
-- Keyboard-operable controls, natural page scroll, responsive paper compositions, and reduced-motion handling.
+- Quick fade, slide, and scale transitions for pages, Lab layouts, and tools.
+- Calm, decorative page-specific SVG objects with fine-pointer parallax. The footer Motion control remembers a manual pause; system reduced motion takes precedence, and background animation pauses in hidden tabs.
+- A viewport-sized Lab with persistent layout controls, adaptive List / Wheel / Grid sizing, and an internally scrollable stage when a small screen or enlarged text needs extra room.
+- Keyboard-operable controls, hidden scrollbars with scrolling preserved, responsive glass and paper compositions, and opaque fallbacks for reduced transparency or browsers without backdrop blur.
+
+The original styles live in `dist/styles.css`; `glass.css` defines the shared materials and ambient scene, `surfaces.css` styles page content, and `lab.css` handles the viewport layout. `motion.js` owns decorative motion preferences and scene changes.
 
 ## Checks
 
-Run `npm install` then `npm run check`. `happy-dom` is a development-only test dependency. The tests cover routes, datasets, search, DOM interactions, wheel gestures, theme persistence, intro completion, FPS updates, contact preview/delivery behavior, and each demo.
+Run `npm install` then `npm run check`. `happy-dom` is a development-only test dependency. All 25 tests pass, covering routes, datasets, search, DOM interactions, repeated Lab layout changes, wheel gestures, theme and motion persistence, reduced motion, decorative scene accessibility, transitions, intro completion, FPS updates, contact preview/delivery behavior, and each demo.
 
-These DOM checks do not verify pixel layout, browser-native focus trapping, native Escape handling, or device touch behavior. Browser visual QA was blocked during the initial build. The Helvetica Neue update was subsequently spot-checked in Chrome on the homepage at desktop and narrower window sizes and on the desktop Lab list. A complete responsive / accessibility pass remains outstanding, including 320 / 390 / 768 / 1440px widths, both themes, reduced motion, and horizontal overflow.
+These DOM checks do not verify pixel layout, browser-native focus trapping, native Escape handling, or physical-device touch behavior. The glass redesign was spot-checked in Chrome on About and the desktop Lab, plus the Lab List and Wheel at a 400px-wide responsive viewport. A follow-up Grid height correction was reviewed in source. A complete cross-browser, both-theme responsive and accessibility pass remains outstanding.
 
 ## Deployment
 

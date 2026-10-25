@@ -11,7 +11,18 @@ window.document.write(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,''));
 for(const key of ['window','document','location','history','localStorage','sessionStorage','HTMLElement','HTMLDialogElement','FormData','AbortController']) {
   Object.defineProperty(globalThis,key,{value:key==='window'?window:window[key],configurable:true,writable:true});
 }
-globalThis.matchMedia=window.matchMedia.bind(window);
+const mediaQueries=new Map();
+globalThis.matchMedia=query=>{
+  const media=window.matchMedia(query);
+  mediaQueries.set(query,[...(mediaQueries.get(query)||[]),media]);
+  return media;
+};
+const changeMedia=(query,matches)=>{
+  for(const media of mediaQueries.get(query)||[]){
+    Object.defineProperty(media,'matches',{value:matches,configurable:true});
+    media.dispatchEvent(new window.MediaQueryListEvent('change',{matches,media:query}));
+  }
+};
 let frameId=0;
 const frames=new Map();
 globalThis.requestAnimationFrame=fn=>{frames.set(++frameId,fn);return frameId;};
@@ -60,6 +71,28 @@ test('wheel buttons and scroll update selection without navigation',()=>{
   go('/lab');click('[data-mode="wheel"]');key($('.wheel-zone'),'Home');click('[data-wheel-step="1"]');assert.equal($('#wheel-item-1').getAttribute('aria-selected'),'true');
   $('.wheel-zone').dispatchEvent(new window.WheelEvent('wheel',{deltaY:100,bubbles:true,cancelable:true}));assert.equal($('#wheel-item-2').getAttribute('aria-selected'),'true');assert.equal(location.pathname,'/lab');
 });
+test('Lab selection and keyboard controls survive repeated layout changes',()=>{
+  go('/lab');
+  click('[data-mode="wheel"]');
+  key($('.wheel-zone'),'Home');
+  key($('.wheel-zone'),'ArrowDown');
+  for(const layout of ['grid','list','wheel','grid','wheel']){
+    const button=$(`[data-mode="${layout}"]`);
+    button.focus();button.click();
+    assert.equal(document.activeElement,button);
+    assert.equal(button.getAttribute('aria-pressed'),'true');
+    assert.equal($$('.mode-switch [aria-pressed="true"]').length,1);
+  }
+  assert.equal($('.wheel-zone').getAttribute('aria-activedescendant'),'wheel-item-1');
+  key($('.wheel-zone'),'ArrowDown');
+  assert.equal($('.wheel-zone').getAttribute('aria-activedescendant'),'wheel-item-2');
+  key($('.wheel-zone'),'End');
+  assert.equal($('[data-wheel-step="1"]').disabled,true);
+  assert.equal($('#wheel-open').getAttribute('href'),`/lab/${experiments.at(-1).id}`);
+  key($('.wheel-zone'),'Home');
+  assert.equal($('[data-wheel-step="-1"]').disabled,true);
+  assert.equal($('#wheel-item-0').getAttribute('aria-selected'),'true');
+});
 test('pointer dragging the wheel selects a different entry without accidental navigation',()=>{
   const zone=$('.wheel-zone');key(zone,'Home');
   // Pointer capture is a rendering-engine feature; stub only that platform boundary.
@@ -78,6 +111,40 @@ test('search supports shortcut, filtering, no results, arrows, Enter and focus r
 });
 test('manual theme choices persist and system mode remains available',()=>{
   click('[data-theme-choice="light"]');assert.equal(localStorage.getItem('star41-theme'),'light');assert.equal(document.documentElement.dataset.theme,'light');go('/about');assert.equal(document.documentElement.dataset.theme,'light');click('[data-theme-choice="dark"]');assert.equal(document.documentElement.dataset.theme,'dark');click('[data-theme-choice="system"]');assert.equal(localStorage.getItem('star41-theme'),'system');assert.equal($('[data-theme-choice="system"]').getAttribute('aria-pressed'),'true');
+});
+test('ambient objects follow the page and stay outside the interaction and accessibility trees',()=>{
+  const scene=$('#ambient-scene');
+  assert.equal(scene.getAttribute('aria-hidden'),'true');
+  assert.ok(scene.hasAttribute('inert'));
+  for(const [path,motif] of [['/about','portrait'],['/lab','orbit'],['/concept','folder'],['/contact','envelope']]){
+    go(path);assert.ok(scene.querySelector(`[data-object="${motif}"]`));
+    assert.equal(scene.querySelector('a,button,input,textarea,[tabindex]'),null);
+  }
+});
+test('background motion pauses persistently and respects a changing reduced-motion preference',()=>{
+  click('#motion-toggle');
+  assert.equal(localStorage.getItem('star41-motion'),'off');
+  go('/about');
+  assert.equal($('#motion-toggle').getAttribute('aria-pressed'),'false');
+  assert.equal(document.documentElement.dataset.motion,'off');
+  changeMedia('(prefers-reduced-motion: reduce)',true);
+  assert.equal($('#motion-toggle').disabled,true);
+  assert.equal(document.documentElement.dataset.motion,'reduced');
+  changeMedia('(prefers-reduced-motion: reduce)',false);
+  assert.equal($('#motion-toggle').disabled,false);
+  assert.equal($('#motion-toggle').getAttribute('aria-pressed'),'false');
+  click('#motion-toggle');
+  assert.equal(localStorage.getItem('star41-motion'),'on');
+  assert.equal($('#motion-toggle').getAttribute('aria-pressed'),'true');
+});
+test('related Lab navigation uses tool and return transitions without delaying route access',()=>{
+  go('/lab');go('/lab/elastic-type');
+  assert.equal($('#main').dataset.transition,'scale');
+  assert.equal($('#demo-word').value,'Play');
+  click('.back-link');
+  assert.equal($('#main').dataset.transition,'slide');
+  assert.ok($('.mode-switch'));
+  go('/about');assert.equal($('#main').dataset.transition,'fade');
 });
 test('contact validates fields, focuses the first error, and never sends a preview',()=>{
   go('/contact');let requests=0;globalThis.fetch=async()=>{requests++;throw new Error('No preview request should occur');};

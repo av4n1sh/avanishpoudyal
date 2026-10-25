@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#222220">
+  <meta name="theme-color" content="#151c24">
   <meta name="description" content="*41 — A personal space for curiosity, design, interaction, and things taking shape.">
   <meta property="og:title" content="*41 — A personal space">
   <meta property="og:description" content="A small space for big curiosities. An open-ended collection of thoughts and interactive experiments.">
@@ -25,9 +25,13 @@
   <link rel="preload" href="/assets/fonts/DM-Sans.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="preload" href="/assets/fonts/helvetica-neue/HelveticaNeueBold.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/glass.css">
+  <link rel="stylesheet" href="/surfaces.css">
+  <link rel="stylesheet" href="/lab.css">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
+  <div id="ambient-scene" aria-hidden="true" inert></div>
   <a class="skip-link" href="#main">Skip to content</a>
   <div id="intro" class="intro" aria-hidden="true">
     <div class="intro-counter">0</div>
@@ -49,6 +53,7 @@
     <main id="main" tabindex="-1"></main>
     <footer class="site-footer">
       <a class="footer-note mono" href="/concept">*41 <span>— STILL TAKING SHAPE</span></a>
+      <button id="motion-toggle" class="motion-toggle" aria-pressed="true" aria-label="Pause background motion"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3-8 6 8 9 0s6 8 9 0"/></svg><span>Motion on</span></button>
       <div class="theme-control" role="group" aria-label="Color theme">
         <button data-theme-choice="light" aria-label="Light theme" title="Light theme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg></button>
         <button data-theme-choice="dark" aria-label="Dark theme" title="Dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14a8.4 8.4 0 0 1-10-10A8.5 8.5 0 1 0 20 14Z"/></svg></button>

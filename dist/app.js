@@ -1,10 +1,12 @@
 import { personal, concept, experiments, pages } from './content.js';
 import { clamp, escapeHTML as esc, resolveRoute, searchItems, validateContact, wheelPosition } from './lib.js';
+import { createMotionController } from './motion.js';
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
 const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
 const main = $('#main');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const ambientMotion = createMotionController(reducedMotion);
 const systemTheme = matchMedia('(prefers-color-scheme: dark)');
 const arrow = '<span aria-hidden="true">↗</span>';
 let pageController = new AbortController();
@@ -67,14 +69,20 @@ function about() {
 function lab() {
   return `<section class="lab-page">${pageHeading('02', 'Lab', `${String(experiments.length).padStart(2, '0')} DEMO EXPERIMENTS`)}
     <div class="lab-intro"><h1>A little room to play.</h1><p>Small experiments in type, form, and motion.<br>Made for exploring. Always open to change.</p></div>
-    <div id="lab-stage"></div>
-    ${experiments.length ? `<div class="lab-toolbar"><span class="mono lab-status">DEMO STUDIES / NOT PORTFOLIO WORK</span><div class="mode-switch" role="group" aria-label="Lab layout">${['list','wheel','grid'].map(m => `<button data-mode="${m}" aria-pressed="${mode === m}"><span aria-hidden="true">${m === 'list' ? '☰' : m === 'wheel' ? '◌' : '⊞'}</span> ${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</div><span class="mono lab-hint">FOLLOW YOUR CURIOSITY ↗</span></div>` : ''}
+    <div id="lab-stage" class="lab-stage" role="region" aria-label="Demo experiments" tabindex="0"></div>
+    ${experiments.length ? `<div class="lab-toolbar"><span class="mono lab-status">DEMO STUDIES / OPEN TO EXPLORATION</span><div class="mode-switch" role="group" aria-label="Lab layout">${['list','wheel','grid'].map(m => `<button data-mode="${m}" aria-pressed="${mode === m}" aria-controls="lab-stage"><span aria-hidden="true">${m === 'list' ? '☰' : m === 'wheel' ? '◌' : '⊞'}</span> ${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</div><span class="mono lab-hint">${String(experiments.length).padStart(2,'0')} SMALL POSSIBILITIES ↗</span></div>` : ''}
   </section>`;
 }
 
 function renderLab() {
   const stage = $('#lab-stage');
+  stage._wheelObserver?.disconnect();
+  stage._wheelObserver = null;
+  stage.scrollTop = 0;
+  stage.style.setProperty('--experiment-count', experiments.length || 1);
+  stage.setAttribute('aria-label', `Demo experiments — ${mode} layout`);
   if (!experiments.length) {
+    stage.className = 'lab-stage mode-empty';
     stage.innerHTML = '<div class="lab-empty"><span aria-hidden="true">✳</span><h2>Room for what comes next.</h2><p>No experiments here yet. A little empty space is a good place to begin.</p><a class="text-link" href="/concept">Read the concept ↗</a></div>';
     return;
   }
@@ -83,33 +91,45 @@ function renderLab() {
   if (mode === 'list') stage.innerHTML = `<div class="experiment-list">${experiments.map((e,i) => `<a class="experiment-row ${i === selected ? 'selected' : ''}" href="/lab/${e.id}" data-index="${i}"><span class="mono experiment-number">${e.number}</span><span class="experiment-title">${esc(e.title)}</span><span class="experiment-category mono">${esc(e.category)}<br><span>DEMO EXPLORATION</span></span><span class="experiment-arrow" aria-hidden="true">↗</span></a>`).join('')}</div>`;
   if (mode === 'grid') stage.innerHTML = `<div class="experiment-grid">${experiments.map((e,i) => `<a class="experiment-tile" href="/lab/${e.id}" data-index="${i}"><div class="tile-art tile-${e.kind}">${art(e.kind,true)}<span class="tile-label mono">${e.number} / DEMO</span><span class="tile-open" aria-hidden="true">↗</span></div><div class="tile-caption"><h2>${esc(e.title)}</h2><span class="mono">${esc(e.category)}</span></div></a>`).join('')}</div>`;
   if (mode === 'wheel') {
-    stage.innerHTML = `<div class="wheel-zone" tabindex="0" role="listbox" aria-label="Experiment wheel" aria-describedby="wheel-help" aria-activedescendant="wheel-item-${selected}"><div class="wheel-guide" aria-hidden="true"></div>${experiments.map((e,i) => `<div class="wheel-item" id="wheel-item-${i}" role="option" aria-selected="${selected === i}" data-index="${i}"><span class="mono wheel-number">${e.number}</span><span>${esc(e.title)}</span></div>`).join('')}<span class="wheel-tick" aria-hidden="true">—</span></div><div class="wheel-details"><div><span class="mono" id="wheel-category"></span><a class="text-link" id="wheel-open" href="/lab/${experiments[selected].id}">Open experiment ${arrow}</a></div><div class="wheel-buttons"><button data-wheel-step="-1" aria-label="Previous experiment">↑</button><button data-wheel-step="1" aria-label="Next experiment">↓</button></div><p id="wheel-help" class="mono">DRAG OR SCROLL TO EXPLORE<br>↑ ↓ TO SELECT · ENTER TO OPEN</p></div>`;
+    stage.innerHTML = `<div class="wheel-zone" tabindex="0" role="listbox" aria-label="Experiment wheel" aria-describedby="wheel-help" aria-activedescendant="wheel-item-${selected}"><div class="wheel-guide" aria-hidden="true"></div>${experiments.map((e,i) => `<div class="wheel-item" id="wheel-item-${i}" role="option" aria-selected="${selected === i}" data-index="${i}"><span class="mono wheel-number">${e.number}</span><span>${esc(e.title)}</span></div>`).join('')}<span class="wheel-tick" aria-hidden="true">—</span></div><div class="wheel-details"><div class="wheel-selection"><span class="mono" id="wheel-category"></span><a class="text-link" id="wheel-open" href="/lab/${experiments[selected].id}">Open experiment ${arrow}</a></div><div class="wheel-buttons"><button data-wheel-step="-1" aria-label="Previous experiment">↑</button><button data-wheel-step="1" aria-label="Next experiment">↓</button></div><p id="wheel-help" class="mono">DRAG OR SCROLL TO EXPLORE<br>↑ ↓ TO SELECT · ENTER TO OPEN</p></div>`;
     updateWheel();
     bindWheel();
   }
   $$('.mode-switch button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
   $$('.experiment-row', stage).forEach(row => {
     const activate = () => { selected = Number(row.dataset.index); $$('.experiment-row',stage).forEach(r => r.classList.toggle('selected',r === row)); };
-    on(row,'pointerenter',activate); on(row,'focus',activate);
+    on(row,'pointerenter',activate); on(row,'focus',() => { activate(); row.scrollIntoView({block:'nearest',inline:'nearest'}); });
   });
-  $$('.experiment-tile',stage).forEach(tile => on(tile,'click',() => { selected = Number(tile.dataset.index); }));
+  $$('.experiment-tile',stage).forEach(tile => {
+    on(tile,'click',() => { selected = Number(tile.dataset.index); });
+    on(tile,'focus',() => { selected = Number(tile.dataset.index); tile.scrollIntoView({block:'nearest',inline:'nearest'}); });
+  });
 }
 
 function updateWheel() {
+  const zone = $('.wheel-zone');
+  const scale = clamp(((zone?.clientHeight || 430) - 40) / 390, .34, 1);
   $$('.wheel-item').forEach((item,i) => {
     const p = wheelPosition(i, selected);
-    item.style.setProperty('--wheel-x',`${p.x}px`); item.style.setProperty('--wheel-y',`${p.y}px`); item.style.setProperty('--wheel-angle',`${p.angle}deg`); item.style.setProperty('--wheel-opacity',p.opacity);
+    item.style.setProperty('--wheel-x',`${p.x*scale}px`); item.style.setProperty('--wheel-y',`${p.y*scale}px`); item.style.setProperty('--wheel-angle',`${p.angle}deg`); item.style.setProperty('--wheel-opacity',p.opacity);
     item.classList.toggle('selected',i === selected); item.setAttribute('aria-selected',i === selected);
   });
   $('.wheel-zone')?.setAttribute('aria-activedescendant',`wheel-item-${selected}`);
   const experiment = experiments[selected];
   $('#wheel-category').textContent = `${experiment.number} / ${experiment.category.toUpperCase()} / DEMO`;
   $('#wheel-open').href = `/lab/${experiment.id}`;
+  $('#wheel-open').setAttribute('aria-label', `Open ${experiment.title} experiment`);
   $$('[data-wheel-step]').forEach(b => { b.disabled = Number(b.dataset.wheelStep) < 0 ? selected === 0 : selected === experiments.length - 1; });
 }
 
 function bindWheel() {
   const zone = $('.wheel-zone');
+  if (typeof ResizeObserver !== 'undefined') {
+    const observer = new ResizeObserver(() => { if(zone.isConnected) updateWheel(); });
+    observer.observe(zone);
+    $('#lab-stage')._wheelObserver = observer;
+    pageController.signal.addEventListener('abort', () => observer.disconnect(), {once:true});
+  }
   let drag = null, dragged = false, wheelTotal = 0, lastWheel = 0;
   const change = value => { selected = clamp(value,0,experiments.length-1); updateWheel(); };
   on(zone,'keydown',event => {
@@ -178,7 +198,10 @@ function experimentPage(experiment) {
 function render() {
   pageController.abort(); pageController = new AbortController();
   const route = resolveRoute(location.pathname,experiments);
+  const previousPage = document.body.dataset.page;
+  main.dataset.transition = route.page === 'experiment' ? 'scale' : previousPage === 'experiment' && route.page === 'lab' ? 'slide' : 'fade';
   document.body.dataset.page = route.page;
+  ambientMotion.setScene(route.page);
   main.innerHTML = route.page === 'home' ? home() : route.page === 'about' ? about() : route.page === 'lab' ? lab() : route.page === 'concept' ? conceptPage() : route.page === 'contact' ? contact() : route.page === 'experiment' ? experimentPage(route.experiment) : `<section class="not-found"><span class="mono">404 / OUTSIDE THE MARGINS</span><h1>A little off the page.</h1><p>This corner doesn’t exist yet.</p><a class="text-link" href="/">Back to the beginning ↗</a></section>`;
   main.classList.remove('page-enter'); void main.offsetWidth; main.classList.add('page-enter');
   document.title = `${route.experiment?.title || ({home:'A personal space',about:'About',lab:'Lab',concept:'The concept',contact:'Contact','not-found':'Page not found'}[route.page])} — *41`;
@@ -202,7 +225,7 @@ function render() {
   if(route.page === 'experiment') bindDemo(route.experiment);
   const tilt = $('[data-tilt]');
   if(tilt) {
-    on(tilt,'pointermove',event => { if(reducedMotion.matches || event.pointerType !== 'mouse') return; const rect=tilt.getBoundingClientRect();tilt.style.transform=`perspective(900px) rotateY(${(event.clientX-rect.left-rect.width/2)/95}deg) rotateX(${-(event.clientY-rect.top-rect.height/2)/95}deg)`; });
+    on(tilt,'pointermove',event => { if(!ambientMotion.enabled() || event.pointerType !== 'mouse') return; const rect=tilt.getBoundingClientRect();tilt.style.transform=`perspective(900px) rotateY(${(event.clientX-rect.left-rect.width/2)/120}deg) rotateX(${-(event.clientY-rect.top-rect.height/2)/120}deg)`; });
     on(tilt,'pointerleave',() => tilt.style.transform='');
   }
 }
@@ -269,7 +292,7 @@ window.addEventListener('popstate',() => {if($('#search-dialog').open) closeSear
 function setTheme(choice, save = true) {
   const effective=choice==='system'?(systemTheme.matches?'dark':'light'):choice;
   document.documentElement.dataset.theme=effective;document.documentElement.dataset.themeChoice=choice;
-  $('meta[name="theme-color"]').content=effective==='dark'?'#222220':'#e9e8e2';
+  $('meta[name="theme-color"]').content=effective==='dark'?'#151c24':'#e7eef3';
   if(save) try {localStorage.setItem('star41-theme',choice);}catch{}
   $$('[data-theme-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeChoice===choice)));
 }
